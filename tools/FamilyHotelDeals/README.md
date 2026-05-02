@@ -41,6 +41,11 @@ Search-FamilyHotelDeal -Query $q | Sort-Object { $_.PricePerNight() } |
 pwsh -File ./tools/FamilyHotelDeals/Samples/Find-FamilyDeals.Demo.ps1 -Destination Eilat
 ```
 
+> ⚠️ ב-`pwsh -File`, מערכים מה-CLI (כמו `-ChildrenAges 10,7,4`) עוברים כמחרוזת אחת ולא תמיד נפרסים נכון. אם צריך לדרוס את הגילים בשורת פקודה, השתמשו ב-`pwsh -Command`:
+> ```powershell
+> pwsh -Command "& ./tools/FamilyHotelDeals/Samples/Find-FamilyDeals.Demo.ps1 -ChildrenAges @(10,7,4)"
+> ```
+
 ## ספקים / Providers
 
 | Provider | מה הוא עושה | מה צריך |

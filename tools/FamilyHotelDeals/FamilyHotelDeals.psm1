@@ -230,6 +230,9 @@ function Find-BestFamilyHotelDeal {
         -RequireSingleRoom:$RequireSingleRoom
 
     $deals = Search-FamilyHotelDeal -Query $q -Provider $Provider
+    # Filter out deep-link placeholders (TotalPrice = 0) — they aren't real deals
+    # to compare. The user can still call Search-FamilyHotelDeal directly to see them.
+    $deals = $deals | Where-Object { $_.TotalPrice -gt 0 }
     if (-not $deals) { return @() }
 
     $familySize = $q.FamilySize()
@@ -291,7 +294,14 @@ function Format-FamilyHotelDealReport {
 
         switch ($As) {
             'Console' {
-                $rows | Format-Table -AutoSize Hotel, City, Stars, Room, Sleeps, Rooms, Board, Nights, Total, PerNight, PerPersonNgt, Cancel, Provider
+                # Force a generous render width so the table is visible when stdout
+                # isn't a TTY (CI, docker exec, bash captures). On a real terminal
+                # the user can still pipe to Format-Table themselves.
+                $width = $Host.UI.RawUI.BufferSize.Width
+                if ($width -le 0) { $width = 220 }
+                $rows |
+                    Format-Table -Property Hotel, City, Stars, Room, Sleeps, Rooms, Board, Nights, Total, PerNight, PerPersonNgt, Cancel, Provider |
+                    Out-String -Width $width
             }
             'Markdown' {
                 $md = "| Hotel | City | ★ | Room | Sleeps | Board | Nights | Total | /Night | /Person/Night | Cancel |`n"

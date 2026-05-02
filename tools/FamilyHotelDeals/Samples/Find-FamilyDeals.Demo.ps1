@@ -16,7 +16,7 @@ param(
     [string]   $Destination = 'Eilat',
     [datetime] $CheckIn     = (Get-Date '2026-07-15'),
     [datetime] $CheckOut    = (Get-Date '2026-07-19'),
-    [int]      $Top         = 8,
+    [int]      $TopN        = 8,
     [int[]]    $ChildrenAges = @(8, 6, 3),
     [decimal]  $MaxTotalPrice
 )
@@ -32,20 +32,24 @@ $findArgs = @{
     CheckIn      = $CheckIn
     CheckOut     = $CheckOut
     ChildrenAges = $ChildrenAges
-    Top          = $Top
+    Top          = $TopN
     SortBy       = 'PricePerPerson'
 }
 if ($PSBoundParameters.ContainsKey('MaxTotalPrice')) { $findArgs.MaxTotalPrice = $MaxTotalPrice }
 
-$top = Find-BestFamilyHotelDeal @findArgs
-$top | Format-FamilyHotelDealReport -As Console -FamilySize ($ChildrenAges.Count + 2)
+$deals = Find-BestFamilyHotelDeal @findArgs
+$deals | Format-FamilyHotelDealReport -As Console -FamilySize ($ChildrenAges.Count + 2)
 
-$reportPath = Join-Path $PSScriptRoot ("deals-{0}-{1}.html" -f $Destination.ToLower(), $CheckIn.ToString('yyyyMMdd'))
-$top | Format-FamilyHotelDealReport -As Html -OutFile $reportPath -FamilySize ($ChildrenAges.Count + 2)
+$slug = $Destination.ToLower() -replace '\s+', '-'
+$reportPath = Join-Path $PSScriptRoot ("deals-{0}-{1}.html" -f $slug, $CheckIn.ToString('yyyyMMdd'))
+$deals | Format-FamilyHotelDealReport -As Html -OutFile $reportPath -FamilySize ($ChildrenAges.Count + 2)
 Write-Host "`nHTML report: $reportPath" -ForegroundColor Green
 
 Write-Host "`nLive search links (Booking.com + Israeli chains):" -ForegroundColor Yellow
 $q = New-FamilyHotelQuery -Destination $Destination -CheckIn $CheckIn -CheckOut $CheckOut -ChildrenAges $ChildrenAges
+$width = $Host.UI.RawUI.BufferSize.Width
+if ($width -le 0) { $width = 220 }
 Search-FamilyHotelDeal -Query $q -Provider BookingCom, IsraeliChains |
     Select-Object Provider, HotelName, Url |
-    Format-Table -AutoSize
+    Format-Table |
+    Out-String -Width $width
